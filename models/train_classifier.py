@@ -33,7 +33,7 @@ def load_data(database_filepath):
     Y: pandas dataframe: Labels dataset
     category_names: list of str. List containing the column names of Y labels
     """
-    engine = create_engine('sqlite:///Messages.db')
+    engine = create_engine('sqlite:///' + database_filepath)
     df = pd.read_sql('SELECT * FROM Messages', engine)
     X = df['message']
     Y = df.drop(['id', 'message', 'original', 'genre'], axis=1)
@@ -83,25 +83,6 @@ def score(y_true, y_pred):
     return f1_median
 
 
-def score(y_true, y_pred):
-    """
-    Calculate median F1 score for multi-output labels
-
-    :param y_true: array. Actual labels
-    :param y_pred: array. Predicted labels return from models
-
-    :returns
-    f1_median: float. median f1 scores
-    """
-    y_true = np.array(y_true)
-    f1_list = []
-    for i in range(y_true.shape[1]):
-        f1 = f1_score(y_true[:, i], y_pred[:, i])
-        f1_list.append(f1)
-    f1_median = np.median(f1_list)
-    return f1_median
-
-
 def build_model():
     """
     To build machine learning pipeline
@@ -118,7 +99,7 @@ def build_model():
         'vect__max_df': [1.0],
         'tfidf__use_idf': [True],
         'clf__estimator__penalty': ['l1', 'l2'],
-        'clf__estimator__C': np.logspace(-5, 5, 10)}
+        'clf__estimator__C': np.logspace(-5, 5, 5)}
 
     scorer = make_scorer(score)
     cv_log = GridSearchCV(pipeline_log, param_grid=parameters_log, scoring=scorer, verbose=5)

@@ -12,7 +12,7 @@ def load_data(messages_filepath, categories_filepath):
     :return:
     df: pandas Dataframe. containing the merged messages and categories dataset
     """
-    messages = pd,read_csv(messages_filepath)
+    messages = pd.read_csv(messages_filepath)
     categories = pd.read_csv(categories_filepath)
 
     # merge the two dataframes above
@@ -65,8 +65,8 @@ def save_data(df, database_filename):
     :param database_filename:  str. Filename for database
     :return:  None
     """
-    engine = create_engine('sqlite:///Messages.db')
-    df.to_sql('Messages', engine, index=False)
+    engine = create_engine('sqlite:///'+database_filename)
+    df.to_sql('Messages', engine, index=False, if_exists='replace')
 
 
 def main():
