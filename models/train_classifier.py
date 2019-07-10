@@ -1,12 +1,63 @@
 import sys
+import pandas as pd
+import numpy as np
+from sqlalchemy import create_engine
 
+from sklearn.pipeline import Pipeline
+from sklearn.model_selection import GridSearchCV, train_test_split
+from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
+from sklearn.multioutput import MultiOutputClassifier
+from sklearn.metrics import recall_score, accuracy_score, precision_score, f1_score, make_scorer
+from sklearn.linear_model import LogisticRegression
+
+import re
+import nltk
+from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords
+from nltk.stem.wordnet import WordNetLemmatizer
+
+import warnings
+
+warnings.filterwarnings("ignore")
 
 def load_data(database_filepath):
-    pass
+    """
+     Load , merge msessage and categories  dataset and seperate  into features and labels
+
+    :param messages_filepath: str: Filepath for messages.csv file
+    :param categories_filepath:: Filepath for categories.csv file
+    :return:
+    X: pandas dataframe. Feature dataset
+    Y: pandas dataframe: Labels dataset
+    """
+    engine = create_engine('sqlite:///Messages.db')
+    df = pd.read_sql('SELECT * FROM Messages', engine)
+    X = df['message']
+    Y = df.drop(['id', 'message', 'original', 'genre'], axis=1)
+
+    return X, Y
 
 
 def tokenize(text):
-    pass
+    """
+    Normalize, tokenize, remove stopwords and lemmatize words
+
+    :param ext: str. Messages for preprocessing
+    :returns
+    clean_tokens: list of strings. Containing tokenize words
+    """
+    # Normalize text
+    text = re.sub(r"[^a-zA-Z0-9]", " ", text.lower())
+
+    # tokenize text
+    tokens = word_tokenize(text)
+
+    # Initialize Lemmatizer
+    lemma = WordNetLemmatizer()
+
+    lemmed = [lemma.lemmatize(w) for w in tokens if w not in stopwords.words("english")]
+
+    return lemmed
 
 
 def build_model():
