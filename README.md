@@ -1,9 +1,22 @@
 # Disaster Response Pipeline Project
 
 ### Installation
+The following packages need to be installed for running the app:
+* json
+* plotly
+* pandas
+* flask
+* numpy
+* sklearn
+* sqlalchemy
+* nltk
 
+### Project  Intro
+This project contains code for a web app where an emergency worker can input a new message and get classification 
+results in several categories, so that messages can be directed to appropriate emergency aid agencies.
 
-
+###  File Descriptions
+Three folders
 ### Instructions:
 1. Run the following commands in the project's root directory to set up your database and model.
 
