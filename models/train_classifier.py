@@ -16,9 +16,11 @@ from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from nltk.stem.wordnet import WordNetLemmatizer
 
+import pickle
 import warnings
 
 warnings.filterwarnings("ignore")
+
 
 def load_data(database_filepath):
     """
@@ -29,13 +31,15 @@ def load_data(database_filepath):
     :return:
     X: pandas dataframe. Feature dataset
     Y: pandas dataframe: Labels dataset
+    category_names: list of str. List containing the column names of Y labels
     """
     engine = create_engine('sqlite:///Messages.db')
     df = pd.read_sql('SELECT * FROM Messages', engine)
     X = df['message']
     Y = df.drop(['id', 'message', 'original', 'genre'], axis=1)
 
-    return X, Y
+    category_names = list(Y.columns.values)
+    return X, Y, category_names
 
 
 def tokenize(text):
@@ -60,16 +64,94 @@ def tokenize(text):
     return lemmed
 
 
+def score(y_true, y_pred):
+    """
+    Calculate median F1 score for multi-output labels
+
+    :param y_true: array. Actual labels
+    :param y_pred: array. Predicted labels return from models
+
+    :returns
+    f1_median: float. median f1 scores
+    """
+    y_true = np.array(y_true)
+    f1_list = []
+    for i in range(y_true.shape[1]):
+        f1 = f1_score(y_true[:, i], y_pred[:, i])
+        f1_list.append(f1)
+    f1_median = np.median(f1_list)
+    return f1_median
+
+
+def score(y_true, y_pred):
+    """
+    Calculate median F1 score for multi-output labels
+
+    :param y_true: array. Actual labels
+    :param y_pred: array. Predicted labels return from models
+
+    :returns
+    f1_median: float. median f1 scores
+    """
+    y_true = np.array(y_true)
+    f1_list = []
+    for i in range(y_true.shape[1]):
+        f1 = f1_score(y_true[:, i], y_pred[:, i])
+        f1_list.append(f1)
+    f1_median = np.median(f1_list)
+    return f1_median
+
+
 def build_model():
-    pass
+    """
+    To build machine learning pipeline
+    :return:
+    cv_log: GridSearch CV object  for logistic regression
+    """
+    pipeline_log = Pipeline([
+        ('vect', CountVectorizer(tokenizer=tokenize)),
+        ('tfidf', TfidfTransformer()),
+        ('clf', MultiOutputClassifier(LogisticRegression()))
+    ])
+
+    parameters_log = {
+        'vect__max_df': [1.0],
+        'tfidf__use_idf': [True],
+        'clf__estimator__penalty': ['l1', 'l2'],
+        'clf__estimator__C': np.logspace(-5, 5, 10)}
+
+    scorer = make_scorer(score)
+    cv_log = GridSearchCV(pipeline_log, param_grid=parameters_log, scoring=scorer, verbose=5)
+    return cv_log
 
 
 def evaluate_model(model, X_test, Y_test, category_names):
-    pass
+    """
+    Print evaluation metrics of the model
+
+    :param model: sklearn models or pipelines
+    :param X_test: dataframe. test feature set
+    :param Y_test:  dataframe. test labels set
+    :param category_names: list of str. List containing the column names of Y labels
+    """
+    Y_test = np.array(Y_test)
+    Y_pred = model.predict(X_test)
+    metrics = []
+
+    for i in range(len(category_names)):
+        accuracy = accuracy_score(Y_test[:, i], Y_pred[:, i])
+        precision = precision_score(Y_test[:, i], Y_pred[:, i])
+        recall = recall_score(Y_test[:, i], Y_pred[:, i])
+        f1 = f1_score(Y_test[:, i], Y_pred[:, i])
+        metrics.append([accuracy, precision, recall, f1])
+
+    metrics_df = pd.DataFrame(metrics, index=category_names, columns=['Accuracy', 'Precision', 'Recall', 'F1-score'])
+    print(metrics_df)
 
 
 def save_model(model, model_filepath):
-    pass
+    with open(model_filepath, 'wb') as out_file:
+        pickle.dump(model.best_estimator_, out_file)
 
 
 def main():
